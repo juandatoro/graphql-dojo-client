@@ -1,18 +1,18 @@
-import React from 'react';
-import { gql } from 'apollo-boost';
-import { useQuery } from '@apollo/react-hooks';
-
-const getAuthorsQuery = gql`
-  {
-    authors {
-      name
-      id
-    }
-  }
-`;
+import React, { useRef, useState, useEffect } from 'react';
+import { useQuery, useMutation } from '@apollo/react-hooks';
+import {
+  getAuthorsQuery,
+  getBooksQuery,
+  addBookMutation
+} from 'graphql/queries';
 
 const AddBook = () => {
-  const { loading, error, data } = useQuery(getAuthorsQuery);
+  const { loading, error, data: queryData } = useQuery(getAuthorsQuery);
+  const [addBook, { data: mutationData }] = useMutation(addBookMutation);
+  const [message, setMessage] = useState('');
+  const nameRef = useRef(null);
+  const genreRef = useRef(null);
+  const authorIdRef = useRef(null);
 
   const displayAuthors = (loadingData, authorsData) => {
     const { authors = [] } = authorsData;
@@ -27,35 +27,64 @@ const AddBook = () => {
     );
   };
 
+  const handleFormSubmit = e => {
+    e.preventDefault();
+    const name = nameRef.current.value;
+    const genre = genreRef.current.value;
+    const authorId = authorIdRef.current.value;
+    addBook({
+      variables: { name, genre, authorId },
+      refetchQueries: [{ query: getBooksQuery }]
+    });
+    nameRef.current.value = '';
+    genreRef.current.value = '';
+    authorIdRef.current.value = '';
+  };
+
+  useEffect(() => {
+    let timer;
+    if (mutationData) {
+      setMessage(<div>Book Created</div>);
+      timer = setTimeout(() => {
+        setMessage('');
+      }, 2000);
+    }
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [mutationData]);
+
   if (error) return <div>Error :(</div>;
   return (
-    <form id='add-book'>
-      <div className='field'>
-        <label htmlFor='book-name'>
-          Book Name:
-          <input id='book-name' type='text' />
-        </label>
-      </div>
+    <>
+      <form id='add-book' onSubmit={e => handleFormSubmit(e)}>
+        <div className='field'>
+          <label htmlFor='book-name'>
+            <span>Book Name:</span>
+            <input ref={nameRef} id='book-name' type='text' />
+          </label>
+        </div>
 
-      <div className='field'>
-        <label htmlFor='book-genre'>
-          Genre:
-          <input id='book-genre' type='text' />
-        </label>
-      </div>
+        <div className='field'>
+          <label htmlFor='book-genre'>
+            <span>Genre:</span>
+            <input ref={genreRef} id='book-genre' type='text' />
+          </label>
+        </div>
 
-      <div className='field'>
-        <label htmlFor='book-author'>
-          Author:
-          <select id='book-author'>
-            <option>Select Author</option>
-            {displayAuthors(loading, data)}
-          </select>
-        </label>
-      </div>
-
-      <button type='submit'>+</button>
-    </form>
+        <div className='field'>
+          <label htmlFor='book-author'>
+            <span>Author:</span>
+            <select ref={authorIdRef} id='book-author'>
+              <option value=''>Select Author</option>
+              {displayAuthors(loading, queryData)}
+            </select>
+          </label>
+        </div>
+        <button type='submit'>+</button>
+      </form>
+      {message}
+    </>
   );
 };
 

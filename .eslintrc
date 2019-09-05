@@ -16,6 +16,7 @@
       }
     ],
     "react/prop-types": 0,
+    "no-shadow": 0,
     "react/no-unescaped-entities": ["error", { "forbid": [">", "}"] }],
     "no-underscore-dangle": 0,
     "import/imports-first": ["error", "absolute-first"],
